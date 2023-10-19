@@ -1,6 +1,7 @@
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +11,9 @@ public class PostManager {
     private static PostManager instance;
     private HashMap<String, Post> posts = new HashMap<>(); // Map of ID to Post
 
+    private SortingStrategy sortingStrategy;
+    private FilteringStrategy filteringStrategy;
+    
     private PostManager() {}
 
     public static PostManager getInstance() {
@@ -19,6 +23,14 @@ public class PostManager {
         return instance;
     }
 
+    public void setSortingStrategy(SortingStrategy sortingStrategy) {
+        this.sortingStrategy = sortingStrategy;
+    }
+
+    public void setFilteringStrategy(FilteringStrategy filteringStrategy) {
+        this.filteringStrategy = filteringStrategy;
+    }
+    
     // Add a post to the collection
     public boolean addPost(Post post) {
         if (posts.containsKey(post.getId())) {
@@ -86,6 +98,21 @@ public class PostManager {
             return false; // Error while writing to file
         }
         return true;
+    }
+    
+    // This method gives the sorted and filtered posts
+    public List<Post> getProcessedPosts() {
+        List<Post> processedPosts = new ArrayList<>(posts.values());
+
+        if (filteringStrategy != null) {
+            processedPosts = filteringStrategy.filter(processedPosts);
+        }
+
+        if (sortingStrategy != null) {
+            processedPosts = sortingStrategy.sort(processedPosts);
+        }
+
+        return processedPosts;
     }
 }
 
