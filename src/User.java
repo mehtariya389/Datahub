@@ -1,12 +1,16 @@
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 
-public class User {
+public class User implements Observer {
     private String username;
     private String password;
     private String firstName;
     private String lastName;
     private HashMap<String, Post> posts = new HashMap<>();
+    
+    private List<String> notifications = new ArrayList<>(); // To store notifications for the user
 
     public User(String username, String password, String firstName, String lastName) {
         this.username = username;
@@ -14,7 +18,17 @@ public class User {
         this.firstName = firstName;
         this.lastName = lastName;
     }
+    
+    @Override
+    public void update(String message) {
+        notifications.add(message);
+        displayNotification(message);
+    }
 
+    public void displayNotification(String message) {
+        System.out.println("Notification for " + getFullName() + ": " + message);
+    }
+    
     // Getters
     public String getUsername() {
         return username;
@@ -36,6 +50,10 @@ public class User {
         return posts;
     }
 
+    public List<String> getNotifications() {
+        return notifications;
+    }
+    
     // Setters
     public void setUsername(String username) {
         this.username = username;

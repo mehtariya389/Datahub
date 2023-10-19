@@ -1,13 +1,18 @@
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Post {
+public class Post implements Observable{
     private String id;
     private String content;
     private String author;
     private int likes;
     private int shares;
     private LocalDateTime dateTime;
-
+    
+    // List of observers observing this Post
+    private List<Observer> observers = new ArrayList<>();
+    
     public Post(String id, String content, String author, int likes, int shares, LocalDateTime dateTime) {
         this.id = id;
         this.content = content;
@@ -67,6 +72,27 @@ public class Post {
         this.dateTime = dateTime;
     }
 
+    // Observable methods:
+    @Override
+    public void addObserver(Observer observer) {
+        if (!observers.contains(observer)) {
+            observers.add(observer);
+        }
+    }
+
+    @Override
+    public void removeObserver(Observer observer) {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(String message) {
+        for (Observer observer : observers) {
+            observer.update(message);
+        }
+    }
+
+    
     // Utility methods
     public void incrementLikes() {
         this.likes++;
