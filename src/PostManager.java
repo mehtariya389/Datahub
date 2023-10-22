@@ -114,5 +114,35 @@ public class PostManager {
 
         return processedPosts;
     }
+    
+    // Import posts from a CSV file
+    public boolean importPostsFromCSV(String pathToFile) {
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isVIP()) {
+            System.err.println("Error: Only VIP users can access this feature.");
+            return false;
+        }
+        try {
+            List<Post> postsFromCSV = CSVImportUtility.readCSV(pathToFile);
+            for (Post post : postsFromCSV) {
+                addPost(post);
+            }
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;  // Error during import
+        }
+    }
+
+    
+    public void visualizeSharesDistribution() {
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser == null || !currentUser.isVIP()) {
+            System.err.println("Error: Only VIP users can access this feature.");
+            return;
+        }
+        DataVisualizationUtility.launchPieChart(posts);
+    }
+
 }
 

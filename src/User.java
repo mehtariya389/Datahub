@@ -1,10 +1,11 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-
-public class User implements Observer {
-    private String username;
+public class User implements Observer,Serializable {
+	private static final long serialVersionUID = 1L;
+	private String username;
     private String password;
     private String firstName;
     private String lastName;
@@ -12,11 +13,16 @@ public class User implements Observer {
     
     private List<String> notifications = new ArrayList<>(); // To store notifications for the user
 
+    // Added isVIP attribute
+    private boolean isVIP;
+    private boolean needsReLogin;
+
     public User(String username, String password, String firstName, String lastName) {
         this.username = username;
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.isVIP = false; // Default value for new users
     }
     
     @Override
@@ -53,6 +59,11 @@ public class User implements Observer {
     public List<String> getNotifications() {
         return notifications;
     }
+
+    // Added getter for isVIP
+    public boolean isVIP() {
+        return isVIP;
+    }
     
     // Setters
     public void setUsername(String username) {
@@ -71,6 +82,11 @@ public class User implements Observer {
         this.lastName = lastName;
     }
 
+    // Added setter for isVIP
+    public void setVIP(boolean isVIP) {
+        this.isVIP = isVIP;
+    }
+    
     // Utility methods
     public String getFullName() {
         return firstName + " " + lastName;
@@ -92,6 +108,14 @@ public class User implements Observer {
         return this.posts.containsKey(postId);
     }
 
+    public boolean needsReLogin() {
+        return needsReLogin;
+    }
+
+    public void resetReLoginFlag() {
+        this.needsReLogin = false;
+    }
+    
     @Override
     public String toString() {
         return "User [username=" + username + ", firstName=" + firstName + ", lastName=" + lastName + "]";

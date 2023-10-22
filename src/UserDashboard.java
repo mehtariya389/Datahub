@@ -3,6 +3,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -10,7 +11,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +34,8 @@ public class UserDashboard extends VBox {
     private Button retrieveTopNPostsButton;
     private Button exportPostButton;
     private Button logoutButton;
+    private Button viewStatsButton; // New button for Pie Chart
+    private Button importPostsButton;
     
 
     public UserDashboard(User user) {
@@ -59,6 +64,10 @@ public class UserDashboard extends VBox {
         getChildren().add(exportPostButton);
         logoutButton = new Button("Logout");
         getChildren().add(logoutButton);
+        viewStatsButton = new Button("View Post Stats");
+        getChildren().add(viewStatsButton);
+        importPostsButton = new Button("Import Posts");
+        getChildren().add(importPostsButton);
         
         topNInputField = new TextField();
         topNInputField.setPromptText("Enter value for N");
@@ -93,6 +102,8 @@ public class UserDashboard extends VBox {
         retrieveTopNPostsButton.setOnAction(e -> handleRetrieveTopNPosts());
         exportPostButton.setOnAction(e -> handleExportPost());
         logoutButton.setOnAction(e -> handleLogout());
+        viewStatsButton.setOnAction(e -> handleViewPostStats());
+        importPostsButton.setOnAction(e -> handleImportPosts());
     }
 
     private void handleAddPost() {
@@ -282,6 +293,84 @@ public class UserDashboard extends VBox {
         loginStage.setScene(loginScene);
         loginStage.setTitle("Login");
         loginStage.show();
+    }
+    
+    private void handleViewPostStats() {
+        // Assuming Post has methods getLikes() and getShares()
+    	if(!currentUser.isVIP()) {
+            infoLabel.setText("Sorry, only VIP users can view post stats.");
+            return;
+        }
+    	if(!currentUser.needsReLogin()) {
+            infoLabel.setText("Please log out and log in again to access VIP functionalities.");
+            return;
+        }
+    	    	
+        int totalLikes = observablePosts.stream().mapToInt(Post::getLikes).sum();
+        int totalShares = observablePosts.stream().mapToInt(Post::getShares).sum();
+
+        PieChart pieChart = new PieChart();
+        pieChart.getData().add(new PieChart.Data("Likes", totalLikes));
+        pieChart.getData().add(new PieChart.Data("Shares", totalShares));
+        
+        // New stage for displaying the chart
+        Stage pieChartStage = new Stage();
+        pieChartStage.setTitle("Post Stats");
+        Scene pieChartScene = new Scene(pieChart, 400, 300);
+        pieChartStage.setScene(pieChartScene);
+        pieChartStage.show();
+    }
+    
+    private void handleImportPosts() {
+    	if(!currentUser.isVIP()) {
+            infoLabel.setText("Sorry, only VIP users can import posts.");
+            return;
+        }
+    	if(!currentUser.needsReLogin()) {
+            infoLabel.setText("Please log out and log in again to access VIP functionalities.");
+            return;
+        }
+    	
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select a CSV File");
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+        
+        File file = fileChooser.showOpenDialog(null);
+        
+        if (file != null) {
+            try {
+                BufferedReader br = new BufferedReader(new FileReader(file));
+                String line;
+                
+                // Skip the header line if present
+                br.readLine();
+                
+                while ((line = br.readLine()) != null) {
+                    String[] values = line.split(",");
+                    
+                    if (values.length != 6) {
+                        infoLabel.setText("Incorrect CSV file format!");
+                        br.close();
+                        return;
+                    }
+                    
+                    // Assuming the CSV columns are ordered: id, content, author, likes, shares, timestamp
+                    Post importedPost = new Post(values[0], values[1], values[2], Integer.parseInt(values[3]), Integer.parseInt(values[4]), LocalDateTime.parse(values[5]));
+                    PostManager.getInstance().addPost(importedPost);
+                    if (values[2].equals(currentUser.getUsername())) {
+                        observablePosts.add(importedPost);
+                    }
+                }
+                
+                br.close();
+                infoLabel.setText("Posts imported successfully!");
+
+            } catch (Exception e) {
+                infoLabel.setText("An error occurred during import!");
+            }
+        } else {
+            infoLabel.setText("No file selected!");
+        }
     }
 
 }

@@ -1,6 +1,9 @@
+import java.util.Optional;
+
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -63,10 +66,23 @@ public class LoginWindow extends VBox {
         
         User user = UserManager.getInstance().getUser(username);
         if (user != null && user.getPassword().equals(password)) {
-        	// Successful login, set the logged-in user in SessionManager
+            // Successful login, set the logged-in user in SessionManager
             SessionManager.getInstance().loginUser(user);
-        	
-        	// Transition to dashboard
+            
+            // Reset the re-login flag for the user after successful login
+            user.resetReLoginFlag();
+
+            // Check if the user is not a VIP and prompt for upgrade
+            if (!user.isVIP()) {
+                Alert upgradeAlert = new Alert(AlertType.CONFIRMATION, "Would you like to upgrade to VIP?", ButtonType.YES, ButtonType.NO);
+                Optional<ButtonType> result = upgradeAlert.showAndWait();
+                if (result.isPresent() && result.get() == ButtonType.YES) {
+                    user.setVIP(true);
+                    infoLabel.setText("Congratulations! You are now a VIP member.");
+                }
+            }
+
+            // Transition to dashboard
             UserDashboard dashboard = new UserDashboard(user);
             Scene scene = new Scene(dashboard, 600, 400);
             Stage stage = (Stage) getScene().getWindow();
@@ -76,6 +92,7 @@ public class LoginWindow extends VBox {
             infoLabel.setText("Invalid login credentials!");
         }
     }
+
 
     private void openRegistrationWindow() {
         RegistrationWindow registrationWindow = new RegistrationWindow();

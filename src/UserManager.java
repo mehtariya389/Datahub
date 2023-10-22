@@ -1,14 +1,23 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.HashMap;
 
 public class UserManager {
     private static UserManager instance;
+    private static final String USER_DATA_FILE = "users.dat";
     private HashMap<String, User> users = new HashMap<>();
     private HashMap<String, Boolean> loggedInUsers = new HashMap<>();
     
     // Reference to the SessionManager instance
     private SessionManager sessionManager = SessionManager.getInstance();
 
-    private UserManager() {}
+    private UserManager() {
+    	loadUsers(); // Load users from the file when initializing the UserManager
+    }
 
     public static UserManager getInstance() {
         if (instance == null) {
@@ -17,16 +26,44 @@ public class UserManager {
         return instance;
     }
 
-    // Create a user profile
+    // Creating a user, saving the updated user list to the file
     public boolean createUser(String username, String password, String firstName, String lastName) {
         if (users.containsKey(username)) {
-            return false; // Username already exists
+            return false;
         }
         User user = new User(username, password, firstName, lastName);
         users.put(username, user);
+        saveUsers();
         return true;
     }
 
+    public void saveUsers() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(USER_DATA_FILE))) {
+            oos.writeObject(users);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public void loadUsers() {
+        File dataFile = new File(USER_DATA_FILE);
+        if (dataFile.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(USER_DATA_FILE))) {
+                Object obj = ois.readObject();
+                if (obj instanceof HashMap<?, ?>) {
+                    users = (HashMap<String, User>) obj;
+                } else {
+                    // Handle the case where the deserialized object isn't what you expected
+                    System.err.println("Failed to load user data. Data format not recognized.");
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    
     // Get user by username
     public User getUser(String username) {
         return users.get(username);
@@ -34,18 +71,18 @@ public class UserManager {
 
     // Edit user profile
     public boolean editUserProfile(String username, String newPassword, String newFirstName, String newLastName) {
-        // Check if the currently logged-in user matches the user to be edited
         if (sessionManager.isLoggedIn() && sessionManager.getCurrentUser().getUsername().equals(username)) {
             User user = getUser(username);
             if (user == null) {
-                return false; // User doesn't exist
+                return false;
             }
             user.setPassword(newPassword);
             user.setFirstName(newFirstName);
             user.setLastName(newLastName);
+            saveUsers(); // Save users after editing
             return true;
         }
-        return false; // Cannot edit profile of other users
+        return false;
     }
 
     // User login
@@ -78,8 +115,9 @@ public class UserManager {
     public boolean removeUser(String username) {
         if (users.containsKey(username)) {
             users.remove(username);
-            return true; // User removed
+            saveUsers(); // Save users after removal
+            return true;
         }
-        return false; // User doesn't exist
+        return false;
     }
 }

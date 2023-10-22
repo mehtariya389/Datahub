@@ -16,7 +16,7 @@ public class SessionManager {
         return instance;
     }
 
-    // Store the logged-in user
+    // Store the logged-in user and fetch the isVIP status
     public void loginUser(User user) {
         this.currentUser = user;
     }
@@ -34,5 +34,21 @@ public class SessionManager {
     // Get the current logged-in user
     public User getCurrentUser() {
         return this.currentUser;
+    }
+
+    // Check if the current logged-in user is VIP
+    public boolean isCurrentUserVIP() {
+        if (this.currentUser != null) {
+            return this.currentUser.isVIP();
+        }
+        return false;
+    }
+
+    // Method to allow/disallow VIP functionalities
+    public void accessVIPFunctionality() {
+        if (!isCurrentUserVIP()) {
+            throw new SecurityException("Access Denied: Only VIP users can access this functionality.");
+        }
+        // Continue with the VIP functionality...
     }
 }
