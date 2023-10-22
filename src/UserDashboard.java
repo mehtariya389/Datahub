@@ -2,10 +2,17 @@
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+
+import java.io.File;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class UserDashboard extends VBox {
     
@@ -16,6 +23,15 @@ public class UserDashboard extends VBox {
     private Button editButton;
     private Button deleteButton;
     private Label infoLabel;
+    private Button editProfileButton;
+    private Button retrievePostByIdButton;
+    private TextField postIdInputField;
+    private ComboBox<String> userSelectionComboBox;
+    private TextField topNInputField;
+    private Button retrieveTopNPostsButton;
+    private Button exportPostButton;
+    private Button logoutButton;
+    
 
     public UserDashboard(User user) {
         this.currentUser = user;
@@ -33,16 +49,50 @@ public class UserDashboard extends VBox {
         editButton = new Button("Edit Post");
         deleteButton = new Button("Delete Post");
         buttonBox.getChildren().addAll(addButton, editButton, deleteButton);
+        editProfileButton = new Button("Edit Profile");
+        getChildren().add(editProfileButton);
+        retrievePostByIdButton = new Button("Retrieve Post");
+        userSelectionComboBox = new ComboBox<>();
+        userSelectionComboBox.getItems().addAll("Current User", "ALL Users");
+        userSelectionComboBox.setValue("Current User");
+        exportPostButton = new Button("Export Post");
+        getChildren().add(exportPostButton);
+        logoutButton = new Button("Logout");
+        getChildren().add(logoutButton);
+        
+        topNInputField = new TextField();
+        topNInputField.setPromptText("Enter value for N");
+        
+        retrieveTopNPostsButton = new Button("Retrieve Top N Posts");
+        HBox topNLayout = new HBox(10, userSelectionComboBox, topNInputField, retrieveTopNPostsButton);
+        
+        getChildren().add(topNLayout);
+        
         
         infoLabel = new Label();
         
         // Add components to the VBox layout
         getChildren().addAll(titleLabel, postListView, buttonBox, infoLabel);
+        
+        // TextField for user to input the post ID
+        postIdInputField = new TextField();
+        postIdInputField.setPromptText("Enter Post ID");
+        
+        // Layout to position the input field and the button
+        HBox retrievePostLayout = new HBox(10);
+        retrievePostLayout.getChildren().addAll(postIdInputField, retrievePostByIdButton);
+        getChildren().add(retrievePostLayout);
+        
 
         // Event Handlers
         addButton.setOnAction(e -> handleAddPost());
         editButton.setOnAction(e -> handleEditPost());
         deleteButton.setOnAction(e -> handleDeletePost());
+        editProfileButton.setOnAction(e -> handleEditProfile());
+        retrievePostByIdButton.setOnAction(e -> handleRetrievePostById());
+        retrieveTopNPostsButton.setOnAction(e -> handleRetrieveTopNPosts());
+        exportPostButton.setOnAction(e -> handleExportPost());
+        logoutButton.setOnAction(e -> handleLogout());
     }
 
     private void handleAddPost() {
@@ -108,5 +158,131 @@ public class UserDashboard extends VBox {
             infoLabel.setText("Please select a post to delete!");
         }
     }
+    
+    private void handleEditProfile() {
+        Dialog<User> dialog = new Dialog<>();
+        dialog.setTitle("Edit Profile");
+        dialog.setHeaderText("Update Your Profile Details");
+
+        ButtonType saveButtonType = new ButtonType("Save", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField firstName = new TextField(currentUser.getFirstName());
+        TextField lastName = new TextField(currentUser.getLastName());
+        TextField username = new TextField(currentUser.getUsername());
+        PasswordField password = new PasswordField();
+        password.setPromptText("New Password (Leave blank to keep old)");
+
+        grid.add(new Label("First Name:"), 0, 0);
+        grid.add(firstName, 1, 0);
+        grid.add(new Label("Last Name:"), 0, 1);
+        grid.add(lastName, 1, 1);
+        grid.add(new Label("Username:"), 0, 2);
+        grid.add(username, 1, 2);
+        grid.add(new Label("Password:"), 0, 3);
+        grid.add(password, 1, 3);
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == saveButtonType) {
+                User updatedUser = new User(username.getText(), password.getText().isEmpty() ? currentUser.getPassword() : password.getText(), firstName.getText(), lastName.getText());
+                return updatedUser;
+            }
+            return null;
+        });
+
+        dialog.showAndWait().ifPresent(updatedUser -> {
+            currentUser.setFirstName(updatedUser.getFirstName());
+            currentUser.setLastName(updatedUser.getLastName());
+            currentUser.setUsername(updatedUser.getUsername());
+            if (!updatedUser.getPassword().isEmpty()) {
+                currentUser.setPassword(updatedUser.getPassword());
+            }
+            // You may also need to handle any username changes in PostManager or other parts of your system.
+            infoLabel.setText("Profile updated successfully!");
+        });
+    }
+    
+    private void handleRetrievePostById() {
+        String postId = postIdInputField.getText().trim();
+        if (!postId.isEmpty()) {
+            Post post = PostManager.getInstance().getPostById(postId);
+            if (post != null) {
+                infoLabel.setText("Post details:\n"
+                                  + "Content: " + post.getContent() + "\n"
+                                  + "Author: " + post.getAuthor() + "\n"
+                                  + "Likes: " + post.getLikes() + "\n"
+                                  + "Shares: " + post.getShares());
+            } else {
+                infoLabel.setText("No post found with the provided ID.");
+            }
+        } else {
+            infoLabel.setText("Please enter a post ID.");
+        }
+    }
+    
+    private void handleRetrieveTopNPosts() {
+        try {
+            int n = Integer.parseInt(topNInputField.getText());
+            List<Post> topNPosts;
+            if (userSelectionComboBox.getValue().equals("Current User")) {
+                topNPosts = PostManager.getInstance().getTopNPostsByLikesForUser(n, currentUser.getUsername());
+            } else {
+                topNPosts = PostManager.getInstance().getTopNPostsByLikes(n);
+            }
+            observablePosts.clear();
+            observablePosts.addAll(topNPosts);
+            infoLabel.setText("Retrieved top " + n + " posts.");
+        } catch (NumberFormatException e) {
+            infoLabel.setText("Please enter a valid number for N.");
+        }
+    }
+    
+    private void handleExportPost() {
+        Post selectedPost = postListView.getSelectionModel().getSelectedItem();
+        if (selectedPost != null) {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Export Post to CSV");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
+            
+            // Show save file dialog
+            File file = fileChooser.showSaveDialog(null);
+            
+            if (file != null) {
+                boolean success = PostManager.getInstance().exportPostToCSV(selectedPost.getId(), file.getParent(), file.getName());
+                if (success) {
+                    infoLabel.setText("Post exported successfully!");
+                } else {
+                    infoLabel.setText("There was an issue exporting the post.");
+                }
+            }
+        } else {
+            infoLabel.setText("Please select a post to export!");
+        }
+    }
+    
+    private void handleLogout() {
+        // Call SessionManager to logout the user
+        SessionManager.getInstance().logoutUser();
+
+        // Close the current dashboard window
+        Stage currentStage = (Stage) this.getScene().getWindow();
+        currentStage.close();
+
+        // Open the login window
+        Stage loginStage = new Stage();
+        LoginWindow loginWindow = new LoginWindow();
+        Scene loginScene = new Scene(loginWindow);
+        loginStage.setScene(loginScene);
+        loginStage.setTitle("Login");
+        loginStage.show();
+    }
+
 }
 

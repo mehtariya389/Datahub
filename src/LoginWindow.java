@@ -63,7 +63,10 @@ public class LoginWindow extends VBox {
         
         User user = UserManager.getInstance().getUser(username);
         if (user != null && user.getPassword().equals(password)) {
-            // Successful login, transition to dashboard
+        	// Successful login, set the logged-in user in SessionManager
+            SessionManager.getInstance().loginUser(user);
+        	
+        	// Transition to dashboard
             UserDashboard dashboard = new UserDashboard(user);
             Scene scene = new Scene(dashboard, 600, 400);
             Stage stage = (Stage) getScene().getWindow();

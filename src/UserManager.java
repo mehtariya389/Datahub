@@ -2,10 +2,11 @@ import java.util.HashMap;
 
 public class UserManager {
     private static UserManager instance;
-    private HashMap<String, User> users = new HashMap<>(); // Using username as the key
-
-    // For this simple version, we'll use a hashmap to mock a logged-in session
-    private HashMap<String, Boolean> loggedInUsers = new HashMap<>(); 
+    private HashMap<String, User> users = new HashMap<>();
+    private HashMap<String, Boolean> loggedInUsers = new HashMap<>();
+    
+    // Reference to the SessionManager instance
+    private SessionManager sessionManager = SessionManager.getInstance();
 
     private UserManager() {}
 
@@ -33,14 +34,18 @@ public class UserManager {
 
     // Edit user profile
     public boolean editUserProfile(String username, String newPassword, String newFirstName, String newLastName) {
-        User user = getUser(username);
-        if (user == null) {
-            return false; // User doesn't exist
+        // Check if the currently logged-in user matches the user to be edited
+        if (sessionManager.isLoggedIn() && sessionManager.getCurrentUser().getUsername().equals(username)) {
+            User user = getUser(username);
+            if (user == null) {
+                return false; // User doesn't exist
+            }
+            user.setPassword(newPassword);
+            user.setFirstName(newFirstName);
+            user.setLastName(newLastName);
+            return true;
         }
-        user.setPassword(newPassword);
-        user.setFirstName(newFirstName);
-        user.setLastName(newLastName);
-        return true;
+        return false; // Cannot edit profile of other users
     }
 
     // User login
@@ -48,6 +53,7 @@ public class UserManager {
         User user = getUser(username);
         if (user != null && user.getPassword().equals(password)) {
             loggedInUsers.put(username, true);
+            sessionManager.loginUser(user); // Updating the SessionManager with the logged-in user
             return true; // Login successful
         }
         return false; // Login failed
@@ -57,6 +63,7 @@ public class UserManager {
     public boolean logoutUser(String username) {
         if (loggedInUsers.containsKey(username)) {
             loggedInUsers.remove(username);
+            sessionManager.logoutUser(); // Logout the user from the session
             return true; // Logout successful
         }
         return false; // User was not logged in
@@ -76,4 +83,3 @@ public class UserManager {
         return false; // User doesn't exist
     }
 }
-

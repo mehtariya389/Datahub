@@ -1,12 +1,12 @@
-
-import java.time.LocalDateTime;
-
 import javafx.geometry.Insets;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import java.time.LocalDateTime;
 
 public class PostManagerScene extends VBox {
 
@@ -14,9 +14,11 @@ public class PostManagerScene extends VBox {
     private Button addButton, retrieveButton, removeButton, exportButton, searchButton;
     private ListView<Post> postListView;
     private PostManager postManager;
+    private SessionManager sessionManager;
 
     public PostManagerScene() {
         postManager = PostManager.getInstance();
+        sessionManager = SessionManager.getInstance();
 
         setPadding(new Insets(15));
         setSpacing(15);
@@ -35,6 +37,14 @@ public class PostManagerScene extends VBox {
 
         Label authorLabel = new Label("Author:");
         authorField = new TextField();
+
+        // Update the authorField to the current user's username if logged in
+        if (sessionManager.isLoggedIn()) {
+            authorField.setText(sessionManager.getCurrentUser().getUsername());
+            authorField.setDisable(true); // Disable editing
+        } else {
+            showAlert("Notification", "No user is currently logged in. You must log in to post.");
+        }
 
         addButton = new Button("Add Post");
         retrieveButton = new Button("Retrieve Post by ID");
@@ -70,10 +80,15 @@ public class PostManagerScene extends VBox {
     }
 
     private void handleAddPost() {
+        if (!sessionManager.isLoggedIn()) {
+            showAlert("Error", "You need to be logged in to add a post!");
+            return;
+        }
+
         String id = idField.getText();
         String content = contentField.getText();
-        String author = authorField.getText();
-        
+        String author = sessionManager.getCurrentUser().getUsername(); // Use the current logged-in user's username
+
         Post newPost = new Post(id, content, author, 0, 0, LocalDateTime.now());
         if (postManager.addPost(newPost)) {
             postListView.getItems().add(newPost);
@@ -113,7 +128,6 @@ public class PostManagerScene extends VBox {
 
     private void handleExportPost() {
         String id = idField.getText();
-        // For the sake of this example, we'll hardcode a path and filename
         if (postManager.exportPostToCSV(id, "./", "exported_post")) {
             showAlert("Success", "Post exported successfully!");
         } else {
