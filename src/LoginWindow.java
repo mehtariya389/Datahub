@@ -49,7 +49,7 @@ public class LoginWindow extends VBox {
 
         // Event Handlers
         loginButton.setOnAction(e -> handleLogin());
-        registerButton.setOnAction(e -> handleRegistration());
+        registerButton.setOnAction(e -> openRegistrationWindow());
     }
 
     private void handleLogin() {
@@ -74,29 +74,14 @@ public class LoginWindow extends VBox {
         }
     }
 
-    private void handleRegistration() {
-        // Logic for user registration
-        String username = usernameField.getText();
-        String password = passwordField.getText();
-
-        if (username.isEmpty() || password.isEmpty()) {
-            infoLabel.setText("Both fields are mandatory for registration!");
-            return;
-        }
-
-        if (UserManager.getInstance().getUser(username) != null) {
-            infoLabel.setText("Username already exists!");
-            return;
-        }
-
-        // Using the createUser method for registration
-        boolean success = UserManager.getInstance().createUser(username, password, "", ""); // Dummy values for first name and last name
-
-        if(success) {
-            infoLabel.setText("User registered successfully! Please login.");
-        } else {
-            infoLabel.setText("Error during registration. Try again.");
-        }
+    private void openRegistrationWindow() {
+        RegistrationWindow registrationWindow = new RegistrationWindow();
+        Scene scene = new Scene(registrationWindow, 600, 400);
+        Stage stage = new Stage();
+        stage.setScene(scene);
+        stage.setTitle("Data Analytics Hub - Registration");
+        stage.show();
     }
 }
+
 
