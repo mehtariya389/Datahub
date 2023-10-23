@@ -2,7 +2,8 @@
 ## Environment & Tools:
 ### IDE Used: Eclipse 
 ### Java Version: Java 17 
-### JavaFX Version: JavaFX 21 
+### JavaFX Version: JavaFX 21
+### JUnit Version: JUnit 4
 ## Installation & Running:
 1. Clone the Repository.
 2. Open the project in your preferred IDE (Eclipse recommended).
@@ -12,19 +13,4 @@
 
 ## OO Design:
 ### Class Diagram:
-A simple textual representation of major classes is shown below
-
-User: Represents individual users. Attributes include username, password, isVIP, etc.
-
-Methods: isVIP(), resetReLoginFlag(), etc.
-UserManager: Singleton pattern. Manages user-related operations.
-
-Methods: getUser(), addUser(), etc.
-SessionManager: Singleton pattern. Manages the current session's logged-in user.
-
-Methods: loginUser(), getLoggedInUser(), etc.
-LoginWindow: JavaFX VBox. Represents the login UI window.
-
-Components: usernameField, passwordField, loginButton, etc.
-Methods: handleLogin(), openRegistrationWindow(), etc.
-UserDashboard: Represents the main dashboard displayed to logged-in users.
+![ClassDiagram](https://github.com/mehtariya389/AdvProg/assets/95973822/455b3741-d082-4833-8600-aaadc6317b55)
