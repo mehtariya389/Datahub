@@ -1,35 +1,27 @@
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class UserManagerTest {
 
-    private File tempUserDataFile;
     private UserManager userManager;
 
     @Before
     public void setUp() throws IOException {
-        // Create a temporary file for testing
-        tempUserDataFile = File.createTempFile("test_users", ".dat");
-        
-        // Change the user data file location for testing
-        setPrivateUserDataFileField(tempUserDataFile.getAbsolutePath());
-
         // Create a fresh instance of UserManager for testing
         resetUserManagerInstance();
+
+        // Clear users HashMap for each test
+        clearUsersHashMap();
     }
 
     @After
     public void tearDown() {
-        // Delete the temporary file after tests
-        if (tempUserDataFile != null && tempUserDataFile.exists()) {
-            tempUserDataFile.delete();
-        }
+        // No operations needed here since we're working in-memory
     }
 
     @Test
@@ -78,14 +70,13 @@ public class UserManagerTest {
         }
     }
 
-    private void setPrivateUserDataFileField(String value) {
+    private void clearUsersHashMap() {
         try {
-            java.lang.reflect.Field userDataFileField = UserManager.class.getDeclaredField("USER_DATA_FILE");
-            userDataFileField.setAccessible(true);
-            userDataFileField.set(null, value);
+            java.lang.reflect.Field usersField = UserManager.class.getDeclaredField("users");
+            usersField.setAccessible(true);
+            usersField.set(userManager, new HashMap<String, User>());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 }
-
