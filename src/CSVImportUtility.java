@@ -24,9 +24,9 @@ public class CSVImportUtility {
                 String author = data.get(2).trim();
                 int likes = Integer.parseInt(data.get(3).trim());
                 int shares = Integer.parseInt(data.get(4).trim());
-                String dateStr = data.get(5).trim();
+                String dateStr = formatDate(data.get(5).trim());  // Formatting the date string
 
-                posts.add(new Post(id, content, author, likes, shares, dateStr));  // Pass dateStr to the Post constructor
+                posts.add(new Post(id, content, author, likes, shares, dateStr));  // Pass formatted dateStr to the Post constructor
             }
         }
 
@@ -51,5 +51,17 @@ public class CSVImportUtility {
         fields.add(splitted[splitted.length - 1].trim()); // date-time
 
         return fields;
+    }
+
+    // Helper method to format date from d/mm/yy to dd/mm/yy
+    private static String formatDate(String dateStr) {
+        String[] parts = dateStr.split("/");
+        if (parts.length != 3) {
+            return dateStr;  // Return the original string if it's not a valid date
+        }
+        String day = parts[0].length() == 1 ? "0" + parts[0] : parts[0];
+        String month = parts[1].length() == 1 ? "0" + parts[1] : parts[1];
+        String year = parts[2];
+        return day + "/" + month + "/" + year;
     }
 }
