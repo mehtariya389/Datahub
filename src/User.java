@@ -9,7 +9,7 @@ public class User implements Observer,Serializable {
     private String password;
     private String firstName;
     private String lastName;
-    private HashMap<String, Post> posts = new HashMap<>();
+    private HashMap<Integer, Post> posts = new HashMap<>();
     
     private List<String> notifications = new ArrayList<>(); // To store notifications for the user
 
@@ -52,7 +52,7 @@ public class User implements Observer,Serializable {
         return lastName;
     }
 
-    public HashMap<String, Post> getPosts() {
+    public HashMap<Integer, Post> getPosts() {
         return posts;
     }
 
@@ -84,7 +84,11 @@ public class User implements Observer,Serializable {
 
     // Added setter for isVIP
     public void setVIP(boolean isVIP) {
-        this.isVIP = isVIP;
+        if (this.isVIP != isVIP) {  // Only change the flag if the VIP status actually changes
+            this.isVIP = isVIP;
+            this.needsReLogin = true;
+            UserManager.getInstance().saveUsers(); // Save users after VIP status change
+        }
     }
     
     // Utility methods
@@ -96,15 +100,15 @@ public class User implements Observer,Serializable {
         this.posts.put(post.getId(), post);
     }
 
-    public void removePost(String postId) {
+    public void removePost(int postId) {
         this.posts.remove(postId);
     }
 
-    public Post getPost(String postId) {
+    public Post getPost(int postId) {
         return this.posts.get(postId);
     }
 
-    public boolean hasPost(String postId) {
+    public boolean hasPost(int postId) {
         return this.posts.containsKey(postId);
     }
 

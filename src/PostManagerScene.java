@@ -1,12 +1,14 @@
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
+import javafx.stage.Stage;
+
+import java.io.File;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class PostManagerScene extends VBox {
 
@@ -15,6 +17,13 @@ public class PostManagerScene extends VBox {
     private ListView<Post> postListView;
     private PostManager postManager;
     private SessionManager sessionManager;
+    private Button importButton;
+    private Stage stage;
+
+    public void setStage(Stage stage) {
+        this.stage = stage;
+    }
+
 
     public PostManagerScene() {
         postManager = PostManager.getInstance();
@@ -50,6 +59,8 @@ public class PostManagerScene extends VBox {
         retrieveButton = new Button("Retrieve Post by ID");
         removeButton = new Button("Remove Post by ID");
         exportButton = new Button("Export Post by ID to CSV");
+        importButton = new Button("Import Posts from CSV");
+
 
         gridPane.add(idLabel, 0, 0);
         gridPane.add(idField, 1, 0);
@@ -69,7 +80,7 @@ public class PostManagerScene extends VBox {
         searchField.setPromptText("Search by ID...");
         searchButton = new Button("Search");
 
-        getChildren().addAll(titleLabel, gridPane, postListView, searchField, searchButton);
+        getChildren().addAll(titleLabel, gridPane, postListView, searchField, searchButton, exportButton, importButton);
 
         // Event Handlers
         addButton.setOnAction(e -> handleAddPost());
@@ -77,6 +88,7 @@ public class PostManagerScene extends VBox {
         removeButton.setOnAction(e -> handleRemovePost());
         exportButton.setOnAction(e -> handleExportPost());
         searchButton.setOnAction(e -> handleSearchPost());
+        importButton.setOnAction(e -> handleImportPosts());
     }
 
     private void handleAddPost() {
@@ -85,11 +97,21 @@ public class PostManagerScene extends VBox {
             return;
         }
 
-        String id = idField.getText();
+        int id;
+        try {
+            id = Integer.parseInt(idField.getText());
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid ID. Please enter a valid integer ID.");
+            return;
+        }
+
         String content = contentField.getText();
         String author = sessionManager.getCurrentUser().getUsername(); // Use the current logged-in user's username
 
-        Post newPost = new Post(id, content, author, 0, 0, LocalDateTime.now());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        String dateStr = LocalDateTime.now().format(formatter);
+        Post newPost = new Post(id, content, author, 0, 0, dateStr);
+
         if (postManager.addPost(newPost)) {
             postListView.getItems().add(newPost);
         } else {
@@ -98,7 +120,14 @@ public class PostManagerScene extends VBox {
     }
 
     private void handleRetrievePost() {
-        String id = idField.getText();
+        int id;
+        try {
+            id = Integer.parseInt(idField.getText());
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid ID. Please enter a valid integer ID.");
+            return;
+        }
+
         Post post = postManager.getPostById(id);
         if (post != null) {
             showAlert("Post Found", post.toString());
@@ -108,11 +137,18 @@ public class PostManagerScene extends VBox {
     }
 
     private void handleRemovePost() {
-        String id = idField.getText();
+        int id;
+        try {
+            id = Integer.parseInt(idField.getText());
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid ID. Please enter a valid integer ID.");
+            return;
+        }
+
         if (postManager.removePost(id)) {
             Post toRemove = null;
             for (Post post : postListView.getItems()) {
-                if (post.getId().equals(id)) {
+                if (post.getId() == id) {
                     toRemove = post;
                     break;
                 }
@@ -127,7 +163,14 @@ public class PostManagerScene extends VBox {
     }
 
     private void handleExportPost() {
-        String id = idField.getText();
+        int id;
+        try {
+            id = Integer.parseInt(idField.getText());
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid ID. Please enter a valid integer ID.");
+            return;
+        }
+
         if (postManager.exportPostToCSV(id, "./", "exported_post")) {
             showAlert("Success", "Post exported successfully!");
         } else {
@@ -136,7 +179,14 @@ public class PostManagerScene extends VBox {
     }
 
     private void handleSearchPost() {
-        String id = searchField.getText();
+        int id;
+        try {
+            id = Integer.parseInt(searchField.getText());
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid ID. Please enter a valid integer ID.");
+            return;
+        }
+
         Post post = postManager.getPostById(id);
         if (post != null) {
             postListView.getSelectionModel().select(post);
@@ -153,4 +203,26 @@ public class PostManagerScene extends VBox {
         alert.setContentText(content);
         alert.showAndWait();
     }
+    
+    private void handleImportPosts() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open CSV File");
+        fileChooser.getExtensionFilters().add(new ExtensionFilter("CSV Files", "*.csv"));
+        File selectedFile = fileChooser.showOpenDialog(stage);
+        
+        if (selectedFile != null) {
+            boolean success = postManager.importPostsFromCSV(selectedFile.getAbsolutePath());
+            if (success) {
+                showAlert("Success", "Posts imported successfully from " + selectedFile.getName());
+                postListView.getItems().clear(); // Clear the current list
+                postListView.getItems().addAll(postManager.getProcessedPosts()); // Reload the updated list
+            } else {
+                showAlert("Error", "Error importing posts from " + selectedFile.getName());
+            }
+        }
+    }
+    
+
+
 }
+

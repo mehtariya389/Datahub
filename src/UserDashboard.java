@@ -11,10 +11,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class UserDashboard extends VBox {
@@ -115,7 +114,10 @@ public class UserDashboard extends VBox {
         // Grab the result and add a new post
         dialog.showAndWait().ifPresent(content -> {
             if (!content.trim().isEmpty()) {
-                Post newPost = new Post(String.valueOf(content.hashCode()), content, currentUser.getUsername(), 0, 0, LocalDateTime.now());
+                int postId = Integer.parseInt(String.valueOf(content.hashCode())); // Convert to int
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                String currentDateTimeStr = LocalDateTime.now().format(formatter); // Convert LocalDateTime to String
+                Post newPost = new Post(postId, content, currentUser.getUsername(), 0, 0, currentDateTimeStr);
                 PostManager.getInstance().addPost(newPost);
                 currentUser.addPost(newPost); // Add to the user's collection
                 observablePosts.add(newPost);
@@ -124,6 +126,7 @@ public class UserDashboard extends VBox {
                 infoLabel.setText("Post content cannot be empty!");
             }
         });
+
     }
 
     private void handleEditPost() {
@@ -221,22 +224,28 @@ public class UserDashboard extends VBox {
     }
     
     private void handleRetrievePostById() {
-        String postId = postIdInputField.getText().trim();
-        if (!postId.isEmpty()) {
-            Post post = PostManager.getInstance().getPostById(postId);
-            if (post != null) {
-                infoLabel.setText("Post details:\n"
+        String postIdStr = postIdInputField.getText().trim();
+        if (!postIdStr.isEmpty()) {
+            try {
+                int postId = Integer.parseInt(postIdStr); // Convert String to int
+                Post post = PostManager.getInstance().getPostById(postId);
+                if (post != null) {
+                    infoLabel.setText("Post details:\n"
                                   + "Content: " + post.getContent() + "\n"
                                   + "Author: " + post.getAuthor() + "\n"
                                   + "Likes: " + post.getLikes() + "\n"
                                   + "Shares: " + post.getShares());
-            } else {
-                infoLabel.setText("No post found with the provided ID.");
+                } else {
+                    infoLabel.setText("No post found with the provided ID.");
+                }
+            } catch (NumberFormatException e) {
+                infoLabel.setText("Invalid post ID format. Please enter a numeric ID.");
             }
         } else {
             infoLabel.setText("Please enter a post ID.");
         }
     }
+
     
     private void handleRetrieveTopNPosts() {
         try {
@@ -301,7 +310,7 @@ public class UserDashboard extends VBox {
             infoLabel.setText("Sorry, only VIP users can view post stats.");
             return;
         }
-    	if(!currentUser.needsReLogin()) {
+    	if(currentUser.needsReLogin()) {
             infoLabel.setText("Please log out and log in again to access VIP functionalities.");
             return;
         }
@@ -322,15 +331,15 @@ public class UserDashboard extends VBox {
     }
     
     private void handleImportPosts() {
-    	if(!currentUser.isVIP()) {
+        if(!currentUser.isVIP()) {
             infoLabel.setText("Sorry, only VIP users can import posts.");
             return;
         }
-    	if(!currentUser.needsReLogin()) {
+        if(currentUser.needsReLogin()) {
             infoLabel.setText("Please log out and log in again to access VIP functionalities.");
             return;
         }
-    	
+        
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Select a CSV File");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
@@ -339,39 +348,26 @@ public class UserDashboard extends VBox {
         
         if (file != null) {
             try {
-                BufferedReader br = new BufferedReader(new FileReader(file));
-                String line;
-                
-                // Skip the header line if present
-                br.readLine();
-                
-                while ((line = br.readLine()) != null) {
-                    String[] values = line.split(",");
-                    
-                    if (values.length != 6) {
-                        infoLabel.setText("Incorrect CSV file format!");
-                        br.close();
-                        return;
-                    }
-                    
-                    // Assuming the CSV columns are ordered: id, content, author, likes, shares, timestamp
-                    Post importedPost = new Post(values[0], values[1], values[2], Integer.parseInt(values[3]), Integer.parseInt(values[4]), LocalDateTime.parse(values[5]));
-                    PostManager.getInstance().addPost(importedPost);
-                    if (values[2].equals(currentUser.getUsername())) {
-                        observablePosts.add(importedPost);
+                List<Post> importedPosts = CSVImportUtility.readCSV(file.getAbsolutePath());
+
+                for (Post post : importedPosts) {
+                    PostManager.getInstance().addPost(post);
+                    if (post.getAuthor().equals(currentUser.getUsername())) {
+                        observablePosts.add(post);
                     }
                 }
-                
-                br.close();
+
                 infoLabel.setText("Posts imported successfully!");
 
             } catch (Exception e) {
                 infoLabel.setText("An error occurred during import!");
+                e.printStackTrace();
             }
         } else {
             infoLabel.setText("No file selected!");
         }
     }
+
 
 }
 

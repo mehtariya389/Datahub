@@ -1,6 +1,7 @@
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class PostManager {
     private static PostManager instance;
-    private HashMap<String, Post> posts = new HashMap<>(); // Map of ID to Post
+    private HashMap<Integer, Post> posts = new HashMap<>(); // Map of ID to Post
 
     private SortingStrategy sortingStrategy;
     private FilteringStrategy filteringStrategy;
@@ -42,12 +43,12 @@ public class PostManager {
     }
 
     // Retrieve a post by its ID
-    public Post getPostById(String id) {
-        return posts.get(id);
+    public Post getPostById(int id) {
+    	return posts.get(id);
     }
 
     // Remove a post by its ID
-    public boolean removePost(String id) {
+    public boolean removePost(int id) {
         if (posts.containsKey(id)) {
             posts.remove(id);
             return true;
@@ -73,15 +74,17 @@ public class PostManager {
     }
 
     // Export a post to CSV based on its ID
-    public boolean exportPostToCSV(String id, String path, String fileName) {
+    public boolean exportPostToCSV(int id, String path, String fileName) {
         Post post = getPostById(id);
         if (post == null) {
             return false; // Post doesn't exist
         }
+        
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
         try (FileWriter writer = new FileWriter(path + "/" + fileName + ".csv")) {
             writer.append("ID,Content,Author,Likes,Shares,DateTime\n");
-            writer.append(post.getId())
+            writer.append(Integer.toString(post.getId()))
                   .append(",")
                   .append(post.getContent())
                   .append(",")
@@ -91,7 +94,7 @@ public class PostManager {
                   .append(",")
                   .append(Integer.toString(post.getShares()))
                   .append(",")
-                  .append(post.getDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
+                  .append(post.getDateTime().format(formatter))
                   .append("\n");
         } catch (IOException e) {
             e.printStackTrace();
@@ -116,6 +119,7 @@ public class PostManager {
     }
     
     // Import posts from a CSV file
+ // Import posts from a CSV file
     public boolean importPostsFromCSV(String pathToFile) {
         User currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser == null || !currentUser.isVIP()) {
@@ -128,9 +132,19 @@ public class PostManager {
                 addPost(post);
             }
             return true;
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("Error reading the CSV file: " + e.getMessage());
             return false;  // Error during import
+        } catch (DateTimeParseException e) {
+            System.err.println("Error parsing date-time from the CSV file: " + e.getMessage());
+            return false;
+        } catch (NumberFormatException e) {
+            System.err.println("Error parsing number (likes or shares) from the CSV file: " + e.getMessage());
+            return false;
+        } catch (Exception e) {
+            System.err.println("Unexpected error during CSV import: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 

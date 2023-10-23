@@ -1,9 +1,11 @@
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class Post implements Observable{
-    private String id;
+    private int id;
     private String content;
     private String author;
     private int likes;
@@ -13,17 +15,18 @@ public class Post implements Observable{
     // List of observers observing this Post
     private List<Observer> observers = new ArrayList<>();
     
-    public Post(String id, String content, String author, int likes, int shares, LocalDateTime dateTime) {
+    public Post(int id, String content, String author, int likes, int shares, String dateStr) {
         this.id = id;
         this.content = content;
         this.author = author;
         this.likes = likes;
         this.shares = shares;
-        this.dateTime = dateTime;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        this.dateTime = LocalDateTime.parse(dateStr, formatter); // Parse the provided date string to LocalDateTime
     }
 
     // Getters
-    public String getId() {
+    public int getId() {
         return id;
     }
 
@@ -48,7 +51,7 @@ public class Post implements Observable{
     }
 
     // Setters
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -104,6 +107,7 @@ public class Post implements Observable{
 
     @Override
     public String toString() {
-        return "Post [id=" + id + ", content=" + content + ", author=" + author + ", likes=" + likes + ", shares=" + shares + ", dateTime=" + dateTime + "]";
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return "Post [id=" + id + ", content=" + content + ", author=" + author + ", likes=" + likes + ", shares=" + shares + ", dateTime=" + dateTime.format(formatter) + "]";
     }
 }
