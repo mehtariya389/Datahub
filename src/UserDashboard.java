@@ -306,22 +306,31 @@ public class UserDashboard extends VBox {
     
     private void handleViewPostStats() {
         // Assuming Post has methods getLikes() and getShares()
-    	if(!currentUser.isVIP()) {
+        if (!currentUser.isVIP()) {
             infoLabel.setText("Sorry, only VIP users can view post stats.");
             return;
         }
-    	if(currentUser.needsReLogin()) {
+        if (currentUser.needsReLogin()) {
             infoLabel.setText("Please log out and log in again to access VIP functionalities.");
             return;
         }
-    	    	
+
         int totalLikes = observablePosts.stream().mapToInt(Post::getLikes).sum();
         int totalShares = observablePosts.stream().mapToInt(Post::getShares).sum();
+
+        // Ensure there are likes and/or shares before creating the chart
+        if (totalLikes == 0 && totalShares == 0) {
+            infoLabel.setText("No likes or shares data available for visualization.");
+            return;
+        }
 
         PieChart pieChart = new PieChart();
         pieChart.getData().add(new PieChart.Data("Likes", totalLikes));
         pieChart.getData().add(new PieChart.Data("Shares", totalShares));
-        
+
+        pieChart.setTitle("Post Stats");
+        pieChart.setLegendVisible(true); // Makes the legend visible if not
+
         // New stage for displaying the chart
         Stage pieChartStage = new Stage();
         pieChartStage.setTitle("Post Stats");
@@ -329,6 +338,7 @@ public class UserDashboard extends VBox {
         pieChartStage.setScene(pieChartScene);
         pieChartStage.show();
     }
+
     
     private void handleImportPosts() {
         if(!currentUser.isVIP()) {
